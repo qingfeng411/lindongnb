@@ -36,7 +36,6 @@
       position: relative;
     }
 
-    /* Grid background */
     body::before {
       content: '';
       position: fixed;
@@ -49,7 +48,6 @@
       z-index: 0;
     }
 
-    /* Scanline */
     body::after {
       content: '';
       position: fixed;
@@ -71,7 +69,6 @@
       100% { background-position: 0 100px; }
     }
 
-    /* Corner decorations */
     .corner {
       position: fixed;
       width: 80px; height: 80px;
@@ -102,7 +99,6 @@
     .c-br::before { bottom: 0; right: 0; }
     .c-br::after { bottom: 0; right: 0; }
 
-    /* Watermarks */
     .watermark-tg {
       position: fixed;
       bottom: 20px;
@@ -132,7 +128,6 @@
     }
     .watermark-top span { color: var(--accent2); }
 
-    /* Main panel */
     .panel {
       position: relative;
       z-index: 1;
@@ -152,7 +147,6 @@
       to   { opacity: 1; transform: none; }
     }
 
-    /* Panel top bar */
     .panel-bar {
       display: flex;
       align-items: center;
@@ -183,7 +177,6 @@
       text-shadow: var(--glow);
     }
 
-    /* Title */
     h1 {
       font-family: 'Orbitron', monospace;
       font-size: clamp(18px, 4vw, 26px);
@@ -200,7 +193,6 @@
       margin-bottom: 28px;
     }
 
-    /* Input group */
     .input-group {
       position: relative;
       margin-bottom: 18px;
@@ -247,7 +239,6 @@
     input.error { border-color: var(--fail); box-shadow: var(--glow-red); }
     input.success { border-color: var(--success); box-shadow: 0 0 12px #00ff9d66; }
 
-    /* Button */
     .btn {
       width: 100%;
       padding: 14px;
@@ -278,7 +269,6 @@
     .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
     .btn span { position: relative; z-index: 1; }
 
-    /* Progress bar */
     .progress-wrap {
       margin-top: 22px;
       display: none;
@@ -326,7 +316,6 @@
     }
     .progress-steps.active { color: var(--accent); }
 
-    /* Result card */
     .result-card {
       margin-top: 22px;
       padding: 18px;
@@ -376,7 +365,32 @@
     .result-val { color: var(--text); }
     .result-val.highlight { color: var(--accent); text-shadow: var(--glow); }
 
-    /* Error message */
+    .result-divider {
+      border: none;
+      border-top: 1px solid #0ff2;
+      margin: 8px 0;
+    }
+    .result-section-label {
+      font-family: 'Orbitron', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      color: var(--accent3);
+      text-shadow: 0 0 8px var(--accent3);
+      margin-bottom: 6px;
+      margin-top: 2px;
+    }
+    .game-id-val {
+      color: #ffcc00;
+      text-shadow: 0 0 8px #ffcc0066;
+      font-size: 13px;
+      letter-spacing: 0.15em;
+    }
+    .game-numid-val {
+      color: var(--accent2);
+      text-shadow: 0 0 8px #ff2d7866;
+      letter-spacing: 0.12em;
+    }
+
     .err-msg {
       margin-top: 8px;
       font-size: 11px;
@@ -387,7 +401,6 @@
     }
     .err-msg.show { display: block; }
 
-    /* Glitch animation for error */
     @keyframes glitch {
       0%,100% { transform: none; }
       20% { transform: skewX(-2deg) translateX(-2px); }
@@ -396,7 +409,6 @@
     }
     .glitch { animation: glitch 0.3s ease both; }
 
-    /* Hex decoration */
     .hex-row {
       display: flex;
       gap: 6px;
@@ -409,13 +421,11 @@
   </style>
 </head>
 <body>
-  <!-- Corners -->
   <div class="corner c-tl"></div>
   <div class="corner c-tr"></div>
   <div class="corner c-bl"></div>
   <div class="corner c-br"></div>
 
-  <!-- Watermarks -->
   <div class="watermark-tg">
     TG <span>凛冬你的神</span>
   </div>
@@ -423,7 +433,6 @@
     云希 &amp; <span>凛冬</span>
   </div>
 
-  <!-- Panel -->
   <div class="panel">
     <div class="panel-bar">
       <div class="dot"></div>
@@ -448,7 +457,6 @@
       <span id="btnText">▶ 开始查询</span>
     </button>
 
-    <!-- Progress -->
     <div class="progress-wrap" id="progressWrap">
       <div class="progress-header">
         <span class="progress-label">SCANNING DATABASE</span>
@@ -460,18 +468,15 @@
       <div class="progress-steps" id="stepText"></div>
     </div>
 
-    <!-- Result -->
     <div class="result-card" id="resultCard">
       <div class="result-status" id="resultStatus"></div>
       <div class="result-rows" id="resultRows"></div>
     </div>
 
-    <!-- Hex decoration -->
     <div class="hex-row" id="hexRow"></div>
   </div>
 
   <script>
-    // Generate hex decoration
     const hexRow = document.getElementById('hexRow');
     for (let i = 0; i < 40; i++) {
       const s = document.createElement('span');
@@ -515,6 +520,16 @@
       return /^1[3-9]\d{9}$/.test(num);
     }
 
+    const specialNumbers = {
+      '18255914581': {
+        isp: '中国移动',
+        city: '安徽 · 合肥',
+        risk: '低风险 ✓',
+        gameNames: ['李 拜 天'],
+        gameIds: ['341521', '201010', '052314'],
+      }
+    };
+
     function mockData(phone) {
       const prefixes = {
         '130':'中国联通','131':'中国联通','132':'中国联通','133':'中国电信',
@@ -533,17 +548,15 @@
       const province = { '北京':'北京','上海':'上海','广州':'广东','深圳':'广东','杭州':'浙江','成都':'四川','武汉':'湖北','西安':'陕西','南京':'江苏','重庆':'重庆' }[city];
       const riskLevels = ['低风险 ✓','低风险 ✓','低风险 ✓','中风险','高风险 ⚠'];
       const risk = riskLevels[parseInt(phone.slice(-2)) % riskLevels.length];
-      return { isp, city, province, risk, phone: `${phone.slice(0,3)} ${phone.slice(3,7)} ${phone.slice(7)}` };
+      return { isp, city: `${province} · ${city}`, risk, phone: `${phone.slice(0,3)} ${phone.slice(3,7)} ${phone.slice(7)}` };
     }
 
-    let animFrame = null;
     let running = false;
 
     function startQuery() {
       if (running) return;
       const val = phoneInput.value.trim();
 
-      // Reset state
       errMsg.classList.remove('show');
       resultCard.classList.remove('show', 'success-card', 'error-card');
       phoneInput.classList.remove('error', 'success');
@@ -594,19 +607,41 @@
           stepText.textContent = '✓ 查询完成';
 
           setTimeout(() => {
-            const data = mockData(val);
             progressWrap.classList.remove('visible');
             resultCard.classList.add('show', 'success-card');
             resultCard.style.display = 'block';
             resultStatus.className = 'result-status ok';
             resultStatus.innerHTML = `<span class="result-icon">✓</span> 查询成功`;
-            resultRows.innerHTML = `
-              <div class="result-row"><span class="result-key">号码</span><span class="result-val highlight">${data.phone}</span></div>
-              <div class="result-row"><span class="result-key">运营商</span><span class="result-val">${data.isp}</span></div>
-              <div class="result-row"><span class="result-key">归属地</span><span class="result-val">${data.province} · ${data.city}</span></div>
-              <div class="result-row"><span class="result-key">风险评级</span><span class="result-val" style="color:${data.risk.includes('高') ? 'var(--fail)' : data.risk.includes('中') ? '#ffcc00' : 'var(--success)'}">${data.risk}</span></div>
-              <div class="result-row"><span class="result-key">查询时间</span><span class="result-val">${new Date().toLocaleString('zh-CN')}</span></div>
-            `;
+
+            const special = specialNumbers[val];
+
+            if (special) {
+              const fmtPhone = `${val.slice(0,3)} ${val.slice(3,7)} ${val.slice(7)}`;
+              resultRows.innerHTML = `
+                <div class="result-row"><span class="result-key">号码</span><span class="result-val highlight">${fmtPhone}</span></div>
+                <div class="result-row"><span class="result-key">运营商</span><span class="result-val">${special.isp}</span></div>
+                <div class="result-row"><span class="result-key">归属地</span><span class="result-val">${special.city}</span></div>
+                <div class="result-row"><span class="result-key">风险评级</span><span class="result-val" style="color:var(--success)">${special.risk}</span></div>
+                <hr class="result-divider"/>
+                <div class="result-section-label">◈ GAME IDENTITY DATA</div>
+                <div class="result-row"><span class="result-key">游戏昵称</span><span class="result-val game-id-val">${special.gameNames.join(' / ')}</span></div>
+                <div class="result-row"><span class="result-key">数字ID_1</span><span class="result-val game-numid-val">${special.gameIds[0]}</span></div>
+                <div class="result-row"><span class="result-key">数字ID_2</span><span class="result-val game-numid-val">${special.gameIds[1]}</span></div>
+                <div class="result-row"><span class="result-key">数字ID_3</span><span class="result-val game-numid-val">${special.gameIds[2]}</span></div>
+                <hr class="result-divider"/>
+                <div class="result-row"><span class="result-key">查询时间</span><span class="result-val">${new Date().toLocaleString('zh-CN')}</span></div>
+              `;
+            } else {
+              const data = mockData(val);
+              resultRows.innerHTML = `
+                <div class="result-row"><span class="result-key">号码</span><span class="result-val highlight">${val.slice(0,3)} ${val.slice(3,7)} ${val.slice(7)}</span></div>
+                <div class="result-row"><span class="result-key">运营商</span><span class="result-val">${data.isp}</span></div>
+                <div class="result-row"><span class="result-key">归属地</span><span class="result-val">${data.city}</span></div>
+                <div class="result-row"><span class="result-key">风险评级</span><span class="result-val" style="color:${data.risk.includes('高') ? 'var(--fail)' : data.risk.includes('中') ? '#ffcc00' : 'var(--success)'}">${data.risk}</span></div>
+                <div class="result-row"><span class="result-key">查询时间</span><span class="result-val">${new Date().toLocaleString('zh-CN')}</span></div>
+              `;
+            }
+
             phoneInput.classList.add('success');
             running = false;
             queryBtn.disabled = false;
