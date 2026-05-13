@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>手机号查询系统</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #04050d;
+      --panel: #080c18;
+      --border: #0ff3;
+      --accent: #00f5ff;
+      --accent2: #ff2d78;
+      --accent3: #b400ff;
+      --text: #c8e6ff;
+      --dim: #3a5068;
+      --success: #00ff9d;
+      --fail: #ff2d78;
+      --glow: 0 0 12px #00f5ff88, 0 0 30px #00f5ff33;
+      --glow-red: 0 0 12px #ff2d7888, 0 0 30px #ff2d7833;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,245,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scanline */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.15) 2px,
+        rgba(0,0,0,0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+      animation: scanMove 8s linear infinite;
+    }
+
+    @keyframes scanMove {
+      0% { background-position: 0 0; }
+      100% { background-position: 0 100px; }
+    }
+
+    /* Corner decorations */
+    .corner {
+      position: fixed;
+      width: 80px; height: 80px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .corner::before, .corner::after {
+      content: '';
+      position: absolute;
+      background: var(--accent);
+    }
+    .corner::before { width: 2px; height: 30px; }
+    .corner::after { width: 30px; height: 2px; }
+
+    .c-tl { top: 16px; left: 16px; }
+    .c-tl::before { top: 0; left: 0; }
+    .c-tl::after { top: 0; left: 0; }
+
+    .c-tr { top: 16px; right: 16px; }
+    .c-tr::before { top: 0; right: 0; }
+    .c-tr::after { top: 0; right: 0; }
+
+    .c-bl { bottom: 16px; left: 16px; }
+    .c-bl::before { bottom: 0; left: 0; }
+    .c-bl::after { bottom: 0; left: 0; }
+
+    .c-br { bottom: 16px; right: 16px; }
+    .c-br::before { bottom: 0; right: 0; }
+    .c-br::after { bottom: 0; right: 0; }
+
+    /* Watermarks */
+    .watermark-tg {
+      position: fixed;
+      bottom: 20px;
+      left: 24px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px;
+      color: var(--accent3);
+      opacity: 0.75;
+      letter-spacing: 0.08em;
+      z-index: 100;
+      text-shadow: 0 0 8px var(--accent3);
+      line-height: 1.6;
+    }
+    .watermark-tg span { color: var(--accent); }
+
+    .watermark-top {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      color: var(--accent);
+      opacity: 0.8;
+      letter-spacing: 0.15em;
+      z-index: 100;
+      text-shadow: 0 0 8px var(--accent);
+    }
+    .watermark-top span { color: var(--accent2); }
+
+    /* Main panel */
+    .panel {
+      position: relative;
+      z-index: 1;
+      width: min(520px, 94vw);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 40px 36px 36px;
+      box-shadow:
+        0 0 0 1px #0ff1,
+        0 0 40px #00f5ff14,
+        inset 0 0 60px #00f5ff06;
+      animation: panelIn 0.6s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* Panel top bar */
+    .panel-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: var(--glow);
+      animation: blink 2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { background: var(--accent2); box-shadow: var(--glow-red); animation-delay: 0.4s; }
+    .dot:nth-child(3) { background: var(--accent3); box-shadow: 0 0 10px var(--accent3); animation-delay: 0.8s; }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .panel-title {
+      margin-left: 8px;
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+
+    /* Title */
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(18px, 4vw, 26px);
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      color: #fff;
+      text-shadow: var(--glow);
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      margin-bottom: 28px;
+    }
+
+    /* Input group */
+    .input-group {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    .input-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--accent);
+      font-size: 16px;
+      pointer-events: none;
+      z-index: 1;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: #060a15;
+      border: 1px solid var(--dim);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 16px;
+      letter-spacing: 0.12em;
+      padding: 14px 14px 14px 40px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      caret-color: var(--accent);
+    }
+    input[type="text"]::placeholder { color: var(--dim); font-size: 13px; }
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: var(--glow), inset 0 0 20px #00f5ff08;
+    }
+    input.error { border-color: var(--fail); box-shadow: var(--glow-red); }
+    input.success { border-color: var(--success); box-shadow: 0 0 12px #00ff9d66; }
+
+    /* Button */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: 'Orbitron', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.2s;
+      text-transform: uppercase;
+    }
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .btn:hover::before { opacity: 0.08; }
+    .btn:hover { box-shadow: var(--glow); }
+    .btn:active { transform: scale(0.99); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+    .btn span { position: relative; z-index: 1; }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin-top: 22px;
+      display: none;
+    }
+    .progress-wrap.visible { display: block; }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+    }
+    .progress-label { color: var(--dim); }
+    .progress-pct { color: var(--accent); font-weight: 700; text-shadow: var(--glow); }
+    .progress-track {
+      width: 100%;
+      height: 3px;
+      background: #0d1a28;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent3), var(--accent));
+      width: 0%;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 8px var(--accent);
+      position: relative;
+    }
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      right: 0; top: -3px;
+      width: 3px; height: 9px;
+      background: #fff;
+      box-shadow: 0 0 6px #fff;
+    }
+    .progress-steps {
+      margin-top: 12px;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--dim);
+      min-height: 16px;
+    }
+    .progress-steps.active { color: var(--accent); }
+
+    /* Result card */
+    .result-card {
+      margin-top: 22px;
+      padding: 18px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      display: none;
+      animation: resultIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+    @keyframes resultIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .result-card.show { display: block; }
+
+    .result-card.success-card {
+      border-color: var(--success);
+      background: #00ff9d08;
+      box-shadow: 0 0 20px #00ff9d14;
+    }
+    .result-card.error-card {
+      border-color: var(--fail);
+      background: #ff2d7808;
+      box-shadow: 0 0 20px #ff2d7814;
+    }
+
+    .result-status {
+      font-family: 'Orbitron', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .result-status.ok { color: var(--success); text-shadow: 0 0 8px var(--success); }
+    .result-status.fail { color: var(--fail); text-shadow: 0 0 8px var(--fail); }
+
+    .result-icon { font-size: 14px; }
+    .result-rows { display: flex; flex-direction: column; gap: 6px; }
+    .result-row {
+      display: flex;
+      gap: 10px;
+    }
+    .result-key { color: var(--dim); min-width: 90px; }
+    .result-val { color: var(--text); }
+    .result-val.highlight { color: var(--accent); text-shadow: var(--glow); }
+
+    /* Error message */
+    .err-msg {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--fail);
+      letter-spacing: 0.1em;
+      display: none;
+      text-shadow: var(--glow-red);
+    }
+    .err-msg.show { display: block; }
+
+    /* Glitch animation for error */
+    @keyframes glitch {
+      0%,100% { transform: none; }
+      20% { transform: skewX(-2deg) translateX(-2px); }
+      40% { transform: skewX(2deg) translateX(2px); }
+      60% { transform: none; }
+    }
+    .glitch { animation: glitch 0.3s ease both; }
+
+    /* Hex decoration */
+    .hex-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 20px;
+      overflow: hidden;
+      opacity: 0.18;
+      user-select: none;
+    }
+    .hex-item { font-size: 9px; color: var(--accent3); letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+  <!-- Corners -->
+  <div class="corner c-tl"></div>
+  <div class="corner c-tr"></div>
+  <div class="corner c-bl"></div>
+  <div class="corner c-br"></div>
+
+  <!-- Watermarks -->
+  <div class="watermark-tg">
+    TG <span>凛冬你的神</span>
+  </div>
+  <div class="watermark-top">
+    云希 &amp; <span>凛冬</span>
+  </div>
+
+  <!-- Panel -->
+  <div class="panel">
+    <div class="panel-bar">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <span class="panel-title">SYSTEM_ONLINE</span>
+    </div>
+
+    <h1>手机号查询</h1>
+    <div class="subtitle">// PHONE NUMBER INTELLIGENCE SYSTEM v2.4</div>
+
+    <div class="input-group">
+      <label class="input-label" for="phone">目标号码 / TARGET</label>
+      <div class="input-wrap">
+        <span class="input-icon">📡</span>
+        <input type="text" id="phone" placeholder="输入11位手机号码..." maxlength="11" autocomplete="off" />
+      </div>
+      <div class="err-msg" id="errMsg">⚠ 格式错误 — 请输入正确的11位手机号码</div>
+    </div>
+
+    <button class="btn" id="queryBtn" onclick="startQuery()">
+      <span id="btnText">▶ 开始查询</span>
+    </button>
+
+    <!-- Progress -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-header">
+        <span class="progress-label">SCANNING DATABASE</span>
+        <span class="progress-pct" id="pctText">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-steps" id="stepText"></div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-card" id="resultCard">
+      <div class="result-status" id="resultStatus"></div>
+      <div class="result-rows" id="resultRows"></div>
+    </div>
+
+    <!-- Hex decoration -->
+    <div class="hex-row" id="hexRow"></div>
+  </div>
+
+  <script>
+    // Generate hex decoration
+    const hexRow = document.getElementById('hexRow');
+    for (let i = 0; i < 40; i++) {
+      const s = document.createElement('span');
+      s.className = 'hex-item';
+      s.textContent = Math.floor(Math.random() * 256).toString(16).padStart(2, '0').toUpperCase();
+      hexRow.appendChild(s);
+    }
+
+    const steps = [
+      'INIT... 连接数据节点',
+      'PROBING... 归属地解析中',
+      'SCANNING... 运营商匹配',
+      'DECODING... 风险等级评估',
+      'VERIFYING... 数据交叉校验',
+      'COMPILING... 生成查询报告',
+    ];
+
+    const phoneInput = document.getElementById('phone');
+    const errMsg = document.getElementById('errMsg');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    const pctText = document.getElementById('pctText');
+    const stepText = document.getElementById('stepText');
+    const resultCard = document.getElementById('resultCard');
+    const resultStatus = document.getElementById('resultStatus');
+    const resultRows = document.getElementById('resultRows');
+    const queryBtn = document.getElementById('queryBtn');
+    const btnText = document.getElementById('btnText');
+
+    phoneInput.addEventListener('input', () => {
+      phoneInput.value = phoneInput.value.replace(/\D/g, '');
+      errMsg.classList.remove('show');
+      phoneInput.classList.remove('error', 'success');
+    });
+
+    phoneInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') startQuery();
+    });
+
+    function isValidPhone(num) {
+      return /^1[3-9]\d{9}$/.test(num);
+    }
+
+    function mockData(phone) {
+      const prefixes = {
+        '130':'中国联通','131':'中国联通','132':'中国联通','133':'中国电信',
+        '135':'中国移动','136':'中国移动','137':'中国移动','138':'中国移动',
+        '139':'中国移动','150':'中国移动','151':'中国移动','152':'中国移动',
+        '153':'中国电信','155':'中国联通','156':'中国联通','157':'中国移动',
+        '158':'中国移动','159':'中国移动','176':'中国联通','177':'中国电信',
+        '178':'中国移动','180':'中国电信','181':'中国电信','182':'中国移动',
+        '183':'中国移动','184':'中国移动','185':'中国联通','186':'中国联通',
+        '187':'中国移动','188':'中国移动','189':'中国电信',
+      };
+      const cities = ['北京','上海','广州','深圳','杭州','成都','武汉','西安','南京','重庆'];
+      const prefix = phone.slice(0, 3);
+      const isp = prefixes[prefix] || '中国移动';
+      const city = cities[parseInt(phone.slice(-4)) % cities.length];
+      const province = { '北京':'北京','上海':'上海','广州':'广东','深圳':'广东','杭州':'浙江','成都':'四川','武汉':'湖北','西安':'陕西','南京':'江苏','重庆':'重庆' }[city];
+      const riskLevels = ['低风险 ✓','低风险 ✓','低风险 ✓','中风险','高风险 ⚠'];
+      const risk = riskLevels[parseInt(phone.slice(-2)) % riskLevels.length];
+      return { isp, city, province, risk, phone: `${phone.slice(0,3)} ${phone.slice(3,7)} ${phone.slice(7)}` };
+    }
+
+    let animFrame = null;
+    let running = false;
+
+    function startQuery() {
+      if (running) return;
+      const val = phoneInput.value.trim();
+
+      // Reset state
+      errMsg.classList.remove('show');
+      resultCard.classList.remove('show', 'success-card', 'error-card');
+      phoneInput.classList.remove('error', 'success');
+
+      if (!isValidPhone(val)) {
+        phoneInput.classList.add('error', 'glitch');
+        errMsg.classList.add('show');
+        setTimeout(() => phoneInput.classList.remove('glitch'), 400);
+        resultCard.classList.add('show', 'error-card');
+        resultCard.style.display = 'block';
+        resultStatus.className = 'result-status fail';
+        resultStatus.innerHTML = `<span class="result-icon">✗</span> 查询失败`;
+        resultRows.innerHTML = `
+          <div class="result-row"><span class="result-key">错误代码</span><span class="result-val" style="color:var(--fail)">ERR_INVALID_FORMAT</span></div>
+          <div class="result-row"><span class="result-key">原因</span><span class="result-val">号码格式不正确，请输入1开头的11位大陆手机号</span></div>
+          <div class="result-row"><span class="result-key">输入值</span><span class="result-val" style="color:var(--fail)">${val || '(空)'}</span></div>
+        `;
+        return;
+      }
+
+      running = true;
+      queryBtn.disabled = true;
+      phoneInput.disabled = true;
+      btnText.textContent = '▶ 查询中...';
+      progressWrap.classList.add('visible');
+      stepText.className = 'progress-steps active';
+
+      let pct = 0;
+      let stepIdx = 0;
+      stepText.textContent = steps[0];
+
+      const interval = setInterval(() => {
+        const inc = Math.random() * 3 + 0.8;
+        pct = Math.min(pct + inc, 99);
+        progressBar.style.width = pct + '%';
+        pctText.textContent = Math.floor(pct) + '%';
+
+        const newStep = Math.floor(pct / (100 / steps.length));
+        if (newStep !== stepIdx && newStep < steps.length) {
+          stepIdx = newStep;
+          stepText.textContent = steps[stepIdx];
+        }
+
+        if (pct >= 99) {
+          clearInterval(interval);
+          progressBar.style.width = '100%';
+          pctText.textContent = '100%';
+          stepText.textContent = '✓ 查询完成';
+
+          setTimeout(() => {
+            const data = mockData(val);
+            progressWrap.classList.remove('visible');
+            resultCard.classList.add('show', 'success-card');
+            resultCard.style.display = 'block';
+            resultStatus.className = 'result-status ok';
+            resultStatus.innerHTML = `<span class="result-icon">✓</span> 查询成功`;
+            resultRows.innerHTML = `
+              <div class="result-row"><span class="result-key">号码</span><span class="result-val highlight">${data.phone}</span></div>
+              <div class="result-row"><span class="result-key">运营商</span><span class="result-val">${data.isp}</span></div>
+              <div class="result-row"><span class="result-key">归属地</span><span class="result-val">${data.province} · ${data.city}</span></div>
+              <div class="result-row"><span class="result-key">风险评级</span><span class="result-val" style="color:${data.risk.includes('高') ? 'var(--fail)' : data.risk.includes('中') ? '#ffcc00' : 'var(--success)'}">${data.risk}</span></div>
+              <div class="result-row"><span class="result-key">查询时间</span><span class="result-val">${new Date().toLocaleString('zh-CN')}</span></div>
+            `;
+            phoneInput.classList.add('success');
+            running = false;
+            queryBtn.disabled = false;
+            phoneInput.disabled = false;
+            btnText.textContent = '▶ 重新查询';
+          }, 400);
+        }
+      }, 40);
+    }
+  </script>
+</body>
+</html>
